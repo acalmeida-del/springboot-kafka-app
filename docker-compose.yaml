@@ -2,6 +2,7 @@ version: '3.8'
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
     ports:
@@ -9,11 +10,51 @@ services:
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
     depends_on:
       - zookeeper
     ports:
       - "9092:9092"
     environment:
+      KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      #KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      #KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://127.0.0.1:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  karapace-schema-registry:
+    image: ghcr.io/aiven-open/karapace:develop
+    hostname: karapace-schema-registry
+    container_name: karapace-schema-registry
+    build:
+      context: ..
+      dockerfile: container/Dockerfile
+      args:
+        KARAPACE_VERSION: 3.7.1
+        PYTHON_VERSION: 3.10
+    entrypoint:
+      - python3
+      - -m
+      - karapace
+    depends_on:
+      - kafka
+    ports:
+      - "8081:8081"
+    environment:
+      KARAPACE_KARAPACE_REGISTRY: true
+      KARAPACE_ADVERTISED_HOSTNAME: localhost
+      KARAPACE_ADVERTISED_PROTOCOL: http
+      KARAPACE_BOOTSTRAP_URI: kafka:9092
+      KARAPACE_PORT: 8081
+      KARAPACE_HOST: 0.0.0.0
+      KARAPACE_MASTER_ELECTION_STRATEGY: highest
+      KARAPACE_MASTER_ELIGIBILITY: true
+      KARAPACE_TOPIC_NAME: _schemas
+      KARAPACE_LOG_LEVEL: INFO
+      KARAPACE_COMPATIBILITY: NONE
+      KARAPACE_KAFKA_SCHEMA_READER_STRICT_MODE: false
+
