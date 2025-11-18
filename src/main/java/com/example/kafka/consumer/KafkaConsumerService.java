@@ -1,12 +1,14 @@
 package com.example.kafka.consumer;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class KafkaConsumerService {
-    @KafkaListener(topics = "demo-topic", groupId = "demo-group")
+    @KafkaListener(topics = "test-topic", groupId = "demo-group")
     public void listen(String message) {
-        System.out.println("Received message: " + message);
+        log.info("Received message: {}", message);
     }
 }
